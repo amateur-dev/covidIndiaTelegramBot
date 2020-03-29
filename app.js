@@ -1,42 +1,51 @@
-var createError = require('http-errors');
-var express = require('express');
-var path = require('path');
-var cookieParser = require('cookie-parser');
-var logger = require('morgan');
-
-var indexRouter = require('./routes/index');
-var usersRouter = require('./routes/users');
-var covidRouter = require('./routes/covidRouter');
-
+var express = require("express");
 var app = express();
+var bodyParser = require("body-parser");
+const KEYS = require("dotenv").config();
+const axios = require("axios");
 
-// view engine setup
-app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'jade');
+let telegram_url =
+  "https://api.telegram.org/bot" +
+  (process.env.TOKEN || KEYS.parsed.TOKEN) +
+  "/sendMessage";
 
-app.use(logger('dev'));
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(bodyParser.json());
+app.use(
+  bodyParser.urlencoded({
+    extended: true
+  })
+);
 
-app.use('/', indexRouter);
-app.use('/covid', covidRouter);
-
-// catch 404 and forward to error handler
-app.use(function(req, res, next) {
-  next(createError(404));
+app.post("/start_bot", (req, res) => {
+  const { message } = req.body;
+  if (message != "/getlatestdata") {
+    var reply = "Sorry, please send the standard command";
+  } else {
+    var reply = axios.get("https://api.rootnet.in/covid19-in/stats/latest").then((res) => {
+      return JSON.parse(responsedata.body)["data"]["summary"];
+    })
+  }
+  sendMessage(telegram_url, message, reply, res);
+  return res.end();
 });
 
-// error handler
-app.use(function(err, req, res, next) {
-  // set locals, only providing error in development
-  res.locals.message = err.message;
-  res.locals.error = req.app.get('env') === 'development' ? err : {};
+sendMessage = (telegram_url, message, reply, res) => {
+  axios({
+    method: post,
+    url: telegram_url,
+    data: {
+      chat_id: message.chat.id,
+      text: reply
+    }
+  })
+    .then(response => {
+      console.log("Message posted");
+      res.end("ok");
+    })
+    .catch(error => {
+      console.log(error);
+    });
+};
 
-  // render the error page
-  res.status(err.status || 500);
-  res.render('error');
-});
 
-module.exports = app;
+app.listen(3000, () => console.log("Telegram bot is listening on port 3000!"));
