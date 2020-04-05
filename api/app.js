@@ -29,4 +29,4 @@ app.all("/start_bot", async (req, res) => {
 });
 
 let port = (process.env.PORT || 3000);
-app.listen(port, () => console.log("Telegram bot is listening on port: " + port))
+app.listen(port, () => console.log("Server is listening on port: " + port))
